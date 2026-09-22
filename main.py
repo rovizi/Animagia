@@ -1,4 +1,4 @@
-from database import engine, get_db
+from database import engine, get_db, SessionLocal
 import models
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
@@ -17,66 +17,66 @@ app = FastAPI(
 
 
 class EpisodeSchema(BaseModel):
-  id: int
-  title: str
-  series: str
-  season: int
-  episode_number: int
-  synopsis: str
-  video_url: str
+    id: int
+    title: str
+    series: str
+    season: int
+    episode_number: int
+    synopsis: str
+    video_url: str
 
-  class Config:
-    from_attributes = True
+    class Config:
+        from_attributes = True
 
 
 # Função para popular a base automaticamente com 1000 episódios (500 Chaves + 500 Chapolin)
 def popular_dados_iniciais():
-  db = SessionLocal()
-  total = db.query(db_models.EpisodeModel).count()
-  if total == 0:
-    episodios = []
+    db = SessionLocal()
+    total = db.query(db_models.EpisodeModel).count()
+    if total == 0:
+        episodios = []
 
-    # --- 500 Episódios de Chaves ---
-    for i in range(1, 501):
-      temporada = (i % 8) + 1
-      tipo = "Raro/Perdido" if i % 3 == 0 else "Clássico"
-      episodios.append({
-          "title": f"Chaves - Episódio #{i} ({tipo} T{temporada})",
-          "series": "Chaves",
-          "season": 1970 + (i % 10),
-          "episode_number": i,
-          "synopsis": (
-              f"Episódio {tipo.lower()} da série Chaves, parte do acervo"
-              f" completo da vila no Animagia."
-          ),
-          "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      })
+        # --- 500 Episódios de Chaves ---
+        for i in range(1, 501):
+            temporada = (i % 8) + 1
+            tipo = "Raro/Perdido" if i % 3 == 0 else "Clássico"
+            episodios.append({
+                "title": f"Chaves - Episódio #{i} ({tipo} T{temporada})",
+                "series": "Chaves",
+                "season": 1970 + (i % 10),
+                "episode_number": i,
+                "synopsis": (
+                    f"Episódio {tipo.lower()} da série Chaves, parte do acervo"
+                    f" completo da vila no Animagia."
+                ),
+                "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            })
 
-    # --- 500 Episódios de Chapolin ---
-    for i in range(1, 501):
-      temporada = (i % 8) + 1
-      tipo = "Raro/Perdido" if i % 3 == 0 else "Clássico"
-      episodios.append({
-          "title": f"Chapolin - Episódio #{i} ({tipo} T{temporada})",
-          "series": "Chapolin",
-          "season": 1970 + (i % 10),
-          "episode_number": i,
-          "synopsis": (
-              f"Episódio {tipo.lower()} do Chapolin Colorado, defendendo os"
-              f" indefesos no Animagia."
-          ),
-          "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      })
+        # --- 500 Episódios de Chapolin ---
+        for i in range(1, 501):
+            temporada = (i % 8) + 1
+            tipo = "Raro/Perdido" if i % 3 == 0 else "Clássico"
+            episodios.append({
+                "title": f"Chapolin - Episódio #{i} ({tipo} T{temporada})",
+                "series": "Chapolin",
+                "season": 1970 + (i % 10),
+                "episode_number": i,
+                "synopsis": (
+                    f"Episódio {tipo.lower()} do Chapolin Colorado, defendendo os"
+                    f" indefesos no Animagia."
+                ),
+                "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            })
 
-    for item in episodios:
-      db.add(db_models.EpisodeModel(**item))
-    db.commit()
-  db.close()
+        for item in episodios:
+            db.add(db_models.EpisodeModel(**item))
+        db.commit()
+    db.close()
 
 
 @app.on_event("startup")
 def startup_event():
-  popular_dados_iniciais()
+    popular_dados_iniciais()
 
 
 # Rota HTML de Streaming com a marca Animagia
@@ -86,21 +86,21 @@ def home(
     page: int = Query(1, ge=1),
     db: Session = Depends(get_db),
 ):
-  limit = 30
-  skip = (page - 1) * limit
+    limit = 30
+    skip = (page - 1) * limit
 
-  query = db.query(db_models.EpisodeModel)
-  if series:
-    query = query.filter(db_models.EpisodeModel.series.ilike(f"%{series}%"))
+    query = db.query(db_models.EpisodeModel)
+    if series:
+        query = query.filter(db_models.EpisodeModel.series.ilike(f"%{series}%"))
 
-  total_episodios = query.count()
-  episodios = query.offset(skip).limit(limit).all()
+    total_episodios = query.count()
+    episodios = query.offset(skip).limit(limit).all()
 
-  series_param = f"&series={series}" if series else ""
-  prev_page = page - 1 if page > 1 else None
-  next_page = page + 1 if (skip + limit) < total_episodios else None
+    series_param = f"&series={series}" if series else ""
+    prev_page = page - 1 if page > 1 else None
+    next_page = page + 1 if (skip + limit) < total_episodios else None
 
-  html = f"""
+    html = f"""
     <html>
         <head>
             <title>Animagia - Acervo de Chaves e Chapolin</title>
@@ -132,8 +132,8 @@ def home(
             <div class="container">
     """
 
-  for ep in episodios:
-    html += f"""
+    for ep in episodios:
+        html += f"""
             <div class="card">
                 <div>
                     <span class="badge">{ep.series} - Ano {ep.season}</span>
@@ -144,21 +144,21 @@ def home(
             </div>
         """
 
-  html += """
+    html += """
             </div>
             <div class="pagination">
     """
-  if prev_page:
-    html += f'<a href="/?page={prev_page}{series_param}">⬅ Página Anterior</a>'
-  if next_page:
-    html += f'<a href="/?page={next_page}{series_param}">Próxima Página ➡</a>'
+    if prev_page:
+        html += f'<a href="/?page={prev_page}{series_param}">⬅ Página Anterior</a>'
+    if next_page:
+        html += f'<a href="/?page={next_page}{series_param}">Próxima Página ➡</a>'
 
-  html += """
+    html += """
             </div>
         </body>
     </html>
     """
-  return html
+    return html
 
 
 @app.get("/episodes", response_model=list[EpisodeSchema])
@@ -168,7 +168,7 @@ def list_episodes(
     limit: int = 1000,
     db: Session = Depends(get_db),
 ):
-  query = db.query(db_models.EpisodeModel)
-  if series:
-    query = query.filter(db_models.EpisodeModel.series.ilike(f"%{series}%"))
-  return query.offset(skip).limit(limit).all()
+    query = db.query(db_models.EpisodeModel)
+    if series:
+        query = query.filter(db_models.EpisodeModel.series.ilike(f"%{series}%"))
+    return query.offset(skip).limit(limit).all()
