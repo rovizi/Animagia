@@ -10,11 +10,9 @@ from sqlalchemy.orm import Session
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Animagia - Acervo de Chaves",
-    description=(
-        "Acervo exclusivo de episódios de Chaves hospedado no Animagia"
-    ),
-    version="7.0.0",
+    title="Animagia - Maratona Chaves",
+    description="Todos os episódios reunidos em uma única capa interativa",
+    version="9.0.0",
 )
 
 
@@ -31,75 +29,35 @@ class EpisodeSchema(BaseModel):
         from_attributes = True
 
 
-# Função para popular a base apenas com os episódios reais da playlist do Chaves
+# Função para popular a base com todos os episódios do link fornecido vinculados à playlist
 def popular_dados_iniciais():
     db = SessionLocal()
     total = db.query(db_models.EpisodeModel).count()
     if total == 0:
-        episodios = []
+        # Todos os episódios configurados para rodar em sequência contínua (Playlist do link enviado)
+        playlist_id = "PLjME5p95AbaS9R79_uQ3KDKMV-ZpKcidO"
+        primeiro_video_id = "Db9c4LDEgs0"
 
-        # Lista limpa com os IDs reais do Chaves (incluindo o episódio que você pediu e outros clássicos da playlist)
-        lista_episodios_chaves = [
+        episodios_chaves = [
             {
-                "title": "Chaves - Invisibilidade (1976) Parte 2",
-                "season": 1976,
-                "video_url": "Db9c4LDEgs0",
-                "synopsis": (
-                    "Episódio clássico onde o Kiko tenta ficar invisível"
-                    " usando tinta na vila."
+                "title": (
+                    "Maratona Completa - Chaves (Todos os Episódios da"
+                    " Playlist)"
                 ),
-            },
-            {
-                "title": "Chaves - Tortinhas de Merengue sem Prejuízo",
-                "season": 1976,
-                "video_url": "kJQP7kiw5Fk",
+                "series": "Chaves",
+                "season": 1970,
+                "episode_number": 1,
                 "synopsis": (
-                    "A clássica e hilária guerra de tortinhas na vila do"
-                    " Chaves."
+                    "Assista a todos os episódios de Chaves em sequência"
+                    " contínua através da playlist oficial completa."
                 ),
-            },
-            {
-                "title": "Chaves - Os Pintores / Pintando a Vila",
-                "season": 1976,
-                "video_url": "jNQXAC9IVRw",
-                "synopsis": (
-                    "Chaves e Kiko tentam dar uma mãozinha de tinta nas"
-                    " paredes da vila."
-                ),
-            },
-            {
-                "title": "Chaves - O Álbum de Figurinhas",
-                "season": 1974,
-                "video_url": "dQw4w9WgXcQ",
-                "synopsis": (
-                    "A disputa para conseguir completar o cobiçado álbum de"
-                    " figurinhas."
-                ),
-            },
-            {
-                "title": "Chaves - O Despejo do Seu Madruga",
-                "season": 1972,
-                "video_url": "3JZ_D3ELwOQ",
-                "synopsis": (
-                    "Mais uma tentativa do Senhor Barriga de cobrar o aluguel"
-                    " atrasado."
-                ),
-            },
+                "video_url": primeiro_video_id,
+                "playlist_id": playlist_id,
+            }
         ]
 
-        # Adicionando os episódios reais à base de dados
-        for idx, item in enumerate(lista_episodios_chaves, start=1):
-            episodios.append({
-                "title": item["title"],
-                "series": "Chaves",
-                "season": item["season"],
-                "episode_number": idx,
-                "synopsis": item["synopsis"],
-                "video_url": item["video_url"],
-            })
-
-        for item in episodios:
-            db.add(db_models.EpisodeModel(**item))
+        # Inserindo na base
+        db.add(db_models.EpisodeModel(**episodios_chaves[0]))
         db.commit()
     db.close()
 
@@ -109,78 +67,94 @@ def startup_event():
     popular_dados_iniciais()
 
 
-# Rota HTML com a sua capa personalizada e player integrado
+# Rota HTML com uma única capa centralizada, botão com silhueta e player de playlist sequencial
 @app.get("/", response_class=HTMLResponse)
-def home(page: int = Query(1, ge=1), db: Session = Depends(get_db)):
-    limit = 12
-    skip = (page - 1) * limit
-
-    query = db.query(db_models.EpisodeModel)
-    total_episodios = query.count()
-    episodios = query.offset(skip).limit(limit).all()
-
-    prev_page = page - 1 if page > 1 else None
-    next_page = page + 1 if (skip + limit) < total_episodios else None
-
-    # URL exata da sua capa personalizada
+def home(db: Session = Depends(get_db)):
+    # URL exata da sua capa personalizada fornecida
     capa_url = "https://i.postimg.cc/TYkFPDS7/Chat-GPT-Image-22-de-set-de-2026-17-50-52.png"
+    
+    # ID da Playlist completa fornecida pelo usuário
+    playlist_id = "PLjME5p95AbaS9R79_uQ3KDKMV-ZpKcidO"
+    video_inicial = "Db9c4LDEgs0"
 
     html = f"""
     <html>
         <head>
-            <title>Animagia - O Melhor do Chaves</title>
+            <title>Animagia - Maratona Chaves</title>
             <style>
-                body {{ font-family: Arial, sans-serif; background: #121212; color: #fff; margin: 0; padding: 20px; }}
-                h1 {{ color: #ffcc00; text-align: center; }}
-                .container {{ display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-top: 20px; }}
-                .card {{ background: #1e1e1e; border: 1px solid #333; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); width: 320px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; }}
-                .card h3 {{ margin-top: 0; color: #ff5555; font-size: 15px; }}
-                .badge {{ background: #ffcc00; color: #000; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; margin-bottom: 8px; }}
+                body {{ font-family: Arial, sans-serif; background: #121212; color: #fff; margin: 0; padding: 20px; text-align: center; }}
+                h1 {{ color: #ffcc00; margin-bottom: 10px; }}
+                p.subtitle {{ color: #ccc; margin-bottom: 30px; font-size: 15px; }}
                 
-                /* Estilo da Capa Personalizada */
-                .card-banner {{ width: 100%; height: 160px; border-radius: 6px; overflow: hidden; margin-bottom: 12px; border: 1px solid #444; }}
-                .card-banner img {{ width: 100%; height: 100%; object-fit: cover; }}
+                .main-container {{
+                    display: flex; justify-content: center; align-items: center; margin-top: 20px;
+                }}
+                
+                .card {{
+                    background: #1e1e1e; border: 1px solid #333; border-radius: 12px;
+                    box-shadow: 0 8px 16px rgba(0,0,0,0.7); width: 600px; max-width: 100%; padding: 20px;
+                    display: flex; flex-direction: column; align-items: center;
+                }}
+                
+                .card h3 {{ color: #ff5555; font-size: 20px; margin: 15px 0 10px 0; }}
+                .badge {{ background: #ffcc00; color: #000; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 15px; display: inline-block; }}
+                
+                /* Estilo da Única Capa Gigante com Botão de Play Interativo */
+                .media-container {{ position: relative; width: 100%; height: 340px; border-radius: 8px; overflow: hidden; border: 1px solid #444; background: #000; }}
+                .media-container img.banner {{ width: 100%; height: 100%; object-fit: cover; display: block; }}
+                
+                .play-overlay {{
+                    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.45); display: flex; align-items: center; justify-content: center;
+                    cursor: pointer; transition: background 0.3s ease;
+                }}
+                .play-overlay:hover {{ background: rgba(0, 0, 0, 0.25); }}
+                
+                /* Botão com a silhueta do rosto/chapéu do Chaves */
+                .chaves-btn {{
+                    width: 75px; height: 75px; background: #ffcc00; border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 6px 15px rgba(0,0,0,0.8); transition: transform 0.2s ease;
+                }}
+                .play-overlay:hover .chaves-btn {{ transform: scale(1.1); }}
+                .chaves-btn svg {{ width: 42px; height: 42px; fill: #121212; }}
 
-                .video-container {{ position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; }}
-                .video-container iframe {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 5px; border: none; }}
-                .pagination {{ text-align: center; margin-top: 30px; }}
-                .pagination a {{ background: #e50914; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 0 10px; }}
-                .pagination a:hover {{ background: #b20710; }}
-                p {{ color: #ccc; font-size: 13px; }}
+                .video-slot {{ display: none; width: 100%; height: 340px; }}
+                .video-slot iframe {{ width: 100%; height: 100%; border-radius: 8px; border: none; }}
+
+                p.desc {{ color: #bbb; font-size: 14px; margin-top: 10px; line-height: 1.4; }}
             </style>
+            <script>
+                function playPlaylist() {{
+                    const container = document.getElementById('media-wrapper');
+                    // Carrega o player embutido do YouTube executando a playlist completa em sequência automática
+                    container.innerHTML = '<div class="video-slot" style="display:block;"><iframe src="https://www.youtube.com/embed/{video_inicial}?list={playlist_id}&autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>';
+                }}
+            </script>
         </head>
         <body>
-            <h1>✨ Animagia - Acervo Oficial de Chaves ✨</h1>
-            <div class="container">
-    """
-
-    for ep in episodios:
-        html += f"""
-            <div class="card">
-                <div>
-                    <span class="badge">Ano {ep.season}</span>
-                    <div class="card-banner">
-                        <img src="{capa_url}" alt="Capa Chaves">
+            <h1>✨ Animagia - Maratona Oficial de Chaves ✨</h1>
+            <p class="subtitle">Todos os episódios reunidos em um único acervo contínuo</p>
+            
+            <div class="main-container">
+                <div class="card">
+                    <div>
+                        <span class="badge">Acervo Completo (Playlist Oficial)</span>
+                        <div class="media-container" id="media-wrapper">
+                            <img src="{capa_url}" class="banner" alt="Capa Chaves">
+                            <div class="play-overlay" onclick="playPlaylist()">
+                                <div class="chaves-btn" title="Assistir Maratona Completa">
+                                    <!-- Silhueta / Ícone do Chaves -->
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <h3>Chaves - Todos os Episódios em Sequência</h3>
+                        <p class="desc">Clique na capa para iniciar a maratona. Os episódios passarão automaticamente em sequência diretamente na tela.</p>
                     </div>
-                    <h3>{ep.title}</h3>
-                    <p>{ep.synopsis}</p>
                 </div>
-                <div class="video-container">
-                    <iframe src="https://www.youtube.com/embed/{ep.video_url}" allowfullscreen></iframe>
-                </div>
-            </div>
-        """
-
-    html += """
-            </div>
-            <div class="pagination">
-    """
-    if prev_page:
-        html += f'<a href="/?page={prev_page}">⬅ Página Anterior</a>'
-    if next_page:
-        html += f'<a href="/?page={next_page}">Próxima Página ➡</a>'
-
-    html += """
             </div>
         </body>
     </html>
