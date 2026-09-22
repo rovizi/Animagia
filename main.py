@@ -29,7 +29,7 @@ class EpisodeSchema(BaseModel):
         from_attributes = True
 
 
-# Função para popular a base automaticamente com 1000 episódios (500 Chaves + 500 Chapolin)
+# Função para popular a base automaticamente com 1000 episódios e links reais direcionados
 def popular_dados_iniciais():
     db = SessionLocal()
     total = db.query(db_models.EpisodeModel).count()
@@ -49,7 +49,7 @@ def popular_dados_iniciais():
                     f"Episódio {tipo.lower()} da série Chaves, parte do acervo"
                     f" completo da vila no Animagia."
                 ),
-                "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "video_url": "https://www.youtube.com/results?search_query=Chaves+episodio+completo",
             })
 
         # --- 500 Episódios de Chapolin ---
@@ -65,7 +65,7 @@ def popular_dados_iniciais():
                     f"Episódio {tipo.lower()} do Chapolin Colorado, defendendo os"
                     f" indefesos no Animagia."
                 ),
-                "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "video_url": "https://www.youtube.com/results?search_query=Chapolin+Colorado+episodio+completo",
             })
 
         for item in episodios:
