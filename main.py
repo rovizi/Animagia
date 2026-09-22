@@ -12,7 +12,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Animagia - Maratona Chaves",
     description="Todos os episódios reunidos em uma única capa interativa",
-    version="13.0.0",
+    version="13.0.1",
 )
 
 
@@ -161,7 +161,6 @@ def home(db: Session = Depends(get_db)):
                         <img src="{capa_url}" class="banner" alt="Capa Chaves">
                         <div class="play-overlay" onclick="playPlaylist()">
                             <div class="chaves-btn" title="Iniciar Maratona do Chaves">
-                                <!-- Silhueta estilizada remetendo ao chapéu/boneco clássico -->
                                 <svg viewBox="0 0 24 24">
                                     <path d="M12 2C9.5 2 7.5 4 7.5 6.5C7.5 7.8 8.1 9 9 9.8V11C9 12.1 9.9 13 11 13H13C14.1 13 15 12.1 15 11V9.8C15.9 9 16.5 7.8 16.5 6.5C16.5 4 14.5 2 12 2M5 15C3.34 15 2 16.34 2 18V21H22V18C22 16.34 20.66 15 19 15H5Z"/>
                                 </svg>
@@ -190,6 +189,6 @@ def home(db: Session = Depends(get_db)):
 
 @app.get("/episodes", response_model=list[EpisodeSchema])
 def list_episodes(
-    skip: int = 0, limit: int, db: Session = Depends(get_db)
+    skip: int = 0, limit: int = 1000, db: Session = Depends(get_db)
 ):
     return db.query(db_models.EpisodeModel).offset(skip).limit(limit).all()
