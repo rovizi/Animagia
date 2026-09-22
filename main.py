@@ -12,7 +12,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Animagia - API de Chaves e Chapolin",
     description="Mega acervo com 1000 episódios hospedado no ecossistema Animagia",
-    version="4.1.0",
+    version="4.2.0",
 )
 
 
@@ -29,7 +29,7 @@ class EpisodeSchema(BaseModel):
         from_attributes = True
 
 
-# Função para popular a base automaticamente com 1000 episódios e links reais direcionados
+# Função para popular a base automaticamente com 1000 episódios e IDs diretos para o player
 def popular_dados_iniciais():
     db = SessionLocal()
     total = db.query(db_models.EpisodeModel).count()
@@ -40,6 +40,8 @@ def popular_dados_iniciais():
         for i in range(1, 501):
             temporada = (i % 8) + 1
             tipo = "Raro/Perdido" if i % 3 == 0 else "Clássico"
+            # ID de exemplo de episódio real do YouTube (pode ajustar depois se quiser IDs específicos)
+            video_id = "jNQXAC9IVRw" if i % 2 == 0 else "kJQP7kiw5Fk"
             episodios.append({
                 "title": f"Chaves - Episódio #{i} ({tipo} T{temporada})",
                 "series": "Chaves",
@@ -49,13 +51,14 @@ def popular_dados_iniciais():
                     f"Episódio {tipo.lower()} da série Chaves, parte do acervo"
                     f" completo da vila no Animagia."
                 ),
-                "video_url": "https://www.youtube.com/results?search_query=Chaves+episodio+completo",
+                "video_url": video_id,
             })
 
         # --- 500 Episódios de Chapolin ---
         for i in range(1, 501):
             temporada = (i % 8) + 1
             tipo = "Raro/Perdido" if i % 3 == 0 else "Clássico"
+            video_id = "kJQP7kiw5Fk" if i % 2 == 0 else "jNQXAC9IVRw"
             episodios.append({
                 "title": f"Chapolin - Episódio #{i} ({tipo} T{temporada})",
                 "series": "Chapolin",
@@ -65,7 +68,7 @@ def popular_dados_iniciais():
                     f"Episódio {tipo.lower()} do Chapolin Colorado, defendendo os"
                     f" indefesos no Animagia."
                 ),
-                "video_url": "https://www.youtube.com/results?search_query=Chapolin+Colorado+episodio+completo",
+                "video_url": video_id,
             })
 
         for item in episodios:
@@ -79,14 +82,14 @@ def startup_event():
     popular_dados_iniciais()
 
 
-# Rota HTML de Streaming com a marca Animagia
+# Rota HTML de Streaming com Player Integrado no Animagia
 @app.get("/", response_class=HTMLResponse)
 def home(
     series: str = Query(None),
     page: int = Query(1, ge=1),
     db: Session = Depends(get_db),
 ):
-    limit = 30
+    limit = 12  # Reduzido ligeiramente para dar espaço aos players de vídeo embutidos
     skip = (page - 1) * limit
 
     query = db.query(db_models.EpisodeModel)
@@ -110,12 +113,12 @@ def home(
                 .menu {{ text-align: center; margin-bottom: 20px; }}
                 .menu a {{ background: #333; color: #fff; padding: 8px 15px; text-decoration: none; border-radius: 5px; margin: 0 5px; font-weight: bold; }}
                 .menu a:hover {{ background: #ffcc00; color: #000; }}
-                .container {{ display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }}
-                .card {{ background: #1e1e1e; border: 1px solid #333; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); width: 280px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; }}
+                .container {{ display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }}
+                .card {{ background: #1e1e1e; border: 1px solid #333; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); width: 320px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; }}
                 .card h3 {{ margin-top: 0; color: #ff5555; font-size: 15px; }}
                 .badge {{ background: #ffcc00; color: #000; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; margin-bottom: 8px; }}
-                .btn {{ background: #e50914; color: white; text-decoration: none; padding: 8px; text-align: center; border-radius: 5px; font-weight: bold; margin-top: 10px; font-size: 14px; }}
-                .btn:hover {{ background: #b20710; }}
+                .video-container {{ position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; }}
+                .video-container iframe {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 5px; border: none; }}
                 .pagination {{ text-align: center; margin-top: 30px; }}
                 .pagination a {{ background: #e50914; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 0 10px; }}
                 .pagination a:hover {{ background: #b20710; }}
@@ -123,11 +126,11 @@ def home(
             </style>
         </head>
         <body>
-            <h1>✨ Animagia - Chaves & Chapolin (1000 Episódios)</h1>
+            <h1>✨ Animagia - Chaves & Chapolin (Streaming Direto)</h1>
             <div class="menu">
                 <a href="/">Ver Todos</a>
-                <a href="/?series=Chaves">Apenas Chaves (500)</a>
-                <a href="/?series=Chapolin">Apenas Chapolin (500)</a>
+                <a href="/?series=Chaves">Apenas Chaves</a>
+                <a href="/?series=Chapolin">Apenas Chapolin</a>
             </div>
             <div class="container">
     """
@@ -140,7 +143,9 @@ def home(
                     <h3>{ep.title}</h3>
                     <p>{ep.synopsis}</p>
                 </div>
-                <a class="btn" href="{ep.video_url}" target="_blank">▶ Assistir Episódio</a>
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/{ep.video_url}" allowfullscreen></iframe>
+                </div>
             </div>
         """
 
