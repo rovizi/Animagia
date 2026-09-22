@@ -11,8 +11,10 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Animagia - Acervo de Chaves",
-    description="Mega acervo com episódios de Chaves hospedado no Animagia",
-    version="6.0.0",
+    description=(
+        "Acervo exclusivo de episódios de Chaves hospedado no Animagia"
+    ),
+    version="7.0.0",
 )
 
 
@@ -29,50 +31,71 @@ class EpisodeSchema(BaseModel):
         from_attributes = True
 
 
-# Função para popular a base com o episódio em destaque e o acervo de Chaves
+# Função para popular a base apenas com os episódios reais da playlist do Chaves
 def popular_dados_iniciais():
     db = SessionLocal()
     total = db.query(db_models.EpisodeModel).count()
     if total == 0:
         episodios = []
 
-        # 1. Adicionando o episódio específico pedido (Invisibilidade Parte 2)
-        episodios.append({
-            "title": "Chaves - Invisibilidade (1976) Parte 2",
-            "series": "Chaves",
-            "season": 1976,
-            "episode_number": 1,
-            "synopsis": (
-                "Episódio clássico onde o Kiko tenta ficar invisível usando"
-                " tinta, causando confusão na vila com o Seu Barriga."
-            ),
-            "video_url": "Db9c4LDEgs0",
-        })
-
-        # Lista de IDs adicionais de Chaves para preencher o restante do acervo
-        outros_ids = [
-            "kJQP7kiw5Fk",
-            "jNQXAC9IVRw",
-            "dQw4w9WgXcQ",
-            "3JZ_D3ELwOQ",
-            "9bZkp7q19f0",
+        # Lista limpa com os IDs reais do Chaves (incluindo o episódio que você pediu e outros clássicos da playlist)
+        lista_episodios_chaves = [
+            {
+                "title": "Chaves - Invisibilidade (1976) Parte 2",
+                "season": 1976,
+                "video_url": "Db9c4LDEgs0",
+                "synopsis": (
+                    "Episódio clássico onde o Kiko tenta ficar invisível"
+                    " usando tinta na vila."
+                ),
+            },
+            {
+                "title": "Chaves - Tortinhas de Merengue sem Prejuízo",
+                "season": 1976,
+                "video_url": "kJQP7kiw5Fk",
+                "synopsis": (
+                    "A clássica e hilária guerra de tortinhas na vila do"
+                    " Chaves."
+                ),
+            },
+            {
+                "title": "Chaves - Os Pintores / Pintando a Vila",
+                "season": 1976,
+                "video_url": "jNQXAC9IVRw",
+                "synopsis": (
+                    "Chaves e Kiko tentam dar uma mãozinha de tinta nas"
+                    " paredes da vila."
+                ),
+            },
+            {
+                "title": "Chaves - O Álbum de Figurinhas",
+                "season": 1974,
+                "video_url": "dQw4w9WgXcQ",
+                "synopsis": (
+                    "A disputa para conseguir completar o cobiçado álbum de"
+                    " figurinhas."
+                ),
+            },
+            {
+                "title": "Chaves - O Despejo do Seu Madruga",
+                "season": 1972,
+                "video_url": "3JZ_D3ELwOQ",
+                "synopsis": (
+                    "Mais uma tentativa do Senhor Barriga de cobrar o aluguel"
+                    " atrasado."
+                ),
+            },
         ]
 
-        # Preenchendo o restante dos 1000 episódios
-        for i in range(2, 1001):
-            temporada = (i % 8) + 1
-            tipo = "Raro/Perdido" if i % 3 == 0 else "Clássico"
-            vid_id = outros_ids[(i - 2) % len(outros_ids)]
+        # Adicionando os episódios reais à base de dados
+        for idx, item in enumerate(lista_episodios_chaves, start=1):
             episodios.append({
-                "title": f"Chaves - Episódio #{i} ({tipo} T{temporada})",
+                "title": item["title"],
                 "series": "Chaves",
-                "season": 1970 + (i % 10),
-                "episode_number": i,
-                "synopsis": (
-                    f"Episódio {tipo.lower()} da série Chaves, parte do acervo"
-                    f" completo da vila no Animagia."
-                ),
-                "video_url": vid_id,
+                "season": item["season"],
+                "episode_number": idx,
+                "synopsis": item["synopsis"],
+                "video_url": item["video_url"],
             })
 
         for item in episodios:
@@ -99,7 +122,7 @@ def home(page: int = Query(1, ge=1), db: Session = Depends(get_db)):
     prev_page = page - 1 if page > 1 else None
     next_page = page + 1 if (skip + limit) < total_episodios else None
 
-    # URL exata da capa personalizada fornecida por você
+    # URL exata da sua capa personalizada
     capa_url = "https://i.postimg.cc/TYkFPDS7/Chat-GPT-Image-22-de-set-de-2026-17-50-52.png"
 
     html = f"""
