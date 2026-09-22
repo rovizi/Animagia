@@ -12,7 +12,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Animagia - Acervo de Chaves",
     description="Mega acervo com episódios de Chaves hospedado no Animagia",
-    version="5.1.0",
+    version="6.0.0",
 )
 
 
@@ -29,15 +29,28 @@ class EpisodeSchema(BaseModel):
         from_attributes = True
 
 
-# Função para popular a base exclusivamente com episódios de Chaves
+# Função para popular a base com o episódio em destaque e o acervo de Chaves
 def popular_dados_iniciais():
     db = SessionLocal()
     total = db.query(db_models.EpisodeModel).count()
     if total == 0:
         episodios = []
 
-        # IDs reais de vídeos de Chaves no YouTube
-        chaves_ids = [
+        # 1. Adicionando o episódio específico pedido (Invisibilidade Parte 2)
+        episodios.append({
+            "title": "Chaves - Invisibilidade (1976) Parte 2",
+            "series": "Chaves",
+            "season": 1976,
+            "episode_number": 1,
+            "synopsis": (
+                "Episódio clássico onde o Kiko tenta ficar invisível usando"
+                " tinta, causando confusão na vila com o Seu Barriga."
+            ),
+            "video_url": "Db9c4LDEgs0",
+        })
+
+        # Lista de IDs adicionais de Chaves para preencher o restante do acervo
+        outros_ids = [
             "kJQP7kiw5Fk",
             "jNQXAC9IVRw",
             "dQw4w9WgXcQ",
@@ -45,11 +58,11 @@ def popular_dados_iniciais():
             "9bZkp7q19f0",
         ]
 
-        # --- 1000 Episódios de Chaves ---
-        for i in range(1, 1001):
+        # Preenchendo o restante dos 1000 episódios
+        for i in range(2, 1001):
             temporada = (i % 8) + 1
             tipo = "Raro/Perdido" if i % 3 == 0 else "Clássico"
-            vid_id = chaves_ids[(i - 1) % len(chaves_ids)]
+            vid_id = outros_ids[(i - 2) % len(outros_ids)]
             episodios.append({
                 "title": f"Chaves - Episódio #{i} ({tipo} T{temporada})",
                 "series": "Chaves",
@@ -86,7 +99,7 @@ def home(page: int = Query(1, ge=1), db: Session = Depends(get_db)):
     prev_page = page - 1 if page > 1 else None
     next_page = page + 1 if (skip + limit) < total_episodios else None
 
-    # URL exata da capa que você forneceu
+    # URL exata da capa personalizada fornecida por você
     capa_url = "https://i.postimg.cc/TYkFPDS7/Chat-GPT-Image-22-de-set-de-2026-17-50-52.png"
 
     html = f"""
