@@ -12,7 +12,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Animagia - Maratona Chaves",
     description="Todos os episódios reunidos em uma única capa interativa",
-    version="9.0.0",
+    version="10.0.0",
 )
 
 
@@ -34,7 +34,6 @@ def popular_dados_iniciais():
     db = SessionLocal()
     total = db.query(db_models.EpisodeModel).count()
     if total == 0:
-        # Todos os episódios configurados para rodar em sequência contínua (Playlist do link enviado)
         playlist_id = "PLjME5p95AbaS9R79_uQ3KDKMV-ZpKcidO"
         primeiro_video_id = "Db9c4LDEgs0"
 
@@ -52,11 +51,9 @@ def popular_dados_iniciais():
                     " contínua através da playlist oficial completa."
                 ),
                 "video_url": primeiro_video_id,
-                "playlist_id": playlist_id,
             }
         ]
 
-        # Inserindo na base
         db.add(db_models.EpisodeModel(**episodios_chaves[0]))
         db.commit()
     db.close()
@@ -73,7 +70,7 @@ def home(db: Session = Depends(get_db)):
     # URL exata da sua capa personalizada fornecida
     capa_url = "https://i.postimg.cc/TYkFPDS7/Chat-GPT-Image-22-de-set-de-2026-17-50-52.png"
     
-    # ID da Playlist completa fornecida pelo usuário
+    # ID da Playlist completa de Chaves fornecida pelo usuário
     playlist_id = "PLjME5p95AbaS9R79_uQ3KDKMV-ZpKcidO"
     video_inicial = "Db9c4LDEgs0"
 
@@ -99,7 +96,7 @@ def home(db: Session = Depends(get_db)):
                 .card h3 {{ color: #ff5555; font-size: 20px; margin: 15px 0 10px 0; }}
                 .badge {{ background: #ffcc00; color: #000; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 15px; display: inline-block; }}
                 
-                /* Estilo da Única Capa Gigante com Botão de Play Interativo */
+                /* Estilo da Única Capa com Botão de Play Interativo */
                 .media-container {{ position: relative; width: 100%; height: 340px; border-radius: 8px; overflow: hidden; border: 1px solid #444; background: #000; }}
                 .media-container img.banner {{ width: 100%; height: 100%; object-fit: cover; display: block; }}
                 
@@ -127,7 +124,7 @@ def home(db: Session = Depends(get_db)):
             <script>
                 function playPlaylist() {{
                     const container = document.getElementById('media-wrapper');
-                    // Carrega o player embutido do YouTube executando a playlist completa em sequência automática
+                    // Carrega a playlist contínua completa do YouTube
                     container.innerHTML = '<div class="video-slot" style="display:block;"><iframe src="https://www.youtube.com/embed/{video_inicial}?list={playlist_id}&autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>';
                 }}
             </script>
