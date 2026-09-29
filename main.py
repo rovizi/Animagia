@@ -67,7 +67,7 @@ def startup_event():
 # Rota HTML com o botão personalizado contendo a silhueta do Chaves
 @app.get("/", response_class=HTMLResponse)
 def home(db: Session = Depends(get_db)):
-    capa_url = "https://i.postimg.cc/TYkFPDS7/Chat-GPT-Image-22-de-set-de-2026-17-50-52.png"
+    capa_url = "https://i.postimg.cc/26Xfn5V9/turma.png"
     playlist_id = "PLjME5p95AbaS9R79_uQ3KDKMV-ZpKcidO"
     video_inicial = "Db9c4LDEgs0"
 
